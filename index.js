@@ -37,20 +37,20 @@ async function ensureSessionFile() {
       process.exit(1);
     }
 
-    console.log("🔄𝗙𝗹𝗲𝘅 𝗠𝘂𝘀𝗶𝗰 | 🎧🌎 creds.json not found. Downloading session from MEGA...");
+    console.log("🔄FlexMusic� | 🎧🌎 creds.json not found. Downloading session from MEGA...");
 
     const sessdata = config.SESSION_ID;
     const filer = File.fromURL(`https://mega.nz/file/${sessdata}`);
 
     filer.download((err, data) => {
       if (err) {
-        console.error("❌𝗙𝗹𝗲𝘅 𝗠𝘂𝘀𝗶𝗰 | 🎧🌎 Failed to download session file from MEGA:", err);
+        console.error("❌FlexMusic� | 🎧🌎 Failed to download session file from MEGA:", err);
         process.exit(1);
       }
 
       fs.mkdirSync(path.join(__dirname, '/auth_info_baileys/'), { recursive: true });
       fs.writeFileSync(credsPath, data);
-      console.log("✅𝗙𝗹𝗲𝘅 𝗠𝘂𝘀𝗶𝗰 | 🎧🌎 Session downloaded and saved. Restarting bot...");
+      console.log("✅FlexMusic� | 🎧🌎 Session downloaded and saved. Restarting bot...");
       setTimeout(() => {
         connectToWA();
       }, 2000);
@@ -63,11 +63,11 @@ async function ensureSessionFile() {
 }
 
 async function connectToWA() {
-  console.log("Connecting 𝗙𝗹𝗲𝘅 𝗠𝘂𝘀𝗶𝗰 | 🎧🌎 🧬...");
+  console.log("Connecting FlexMusic� | 🎧🌎 🧬...");
   const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, '/auth_info_baileys/'));
   const { version } = await fetchLatestBaileysVersion();
 
-  const Flex Music = makeWASocket({
+  const FlexMusic = makeWASocket({
     logger: P({ level: 'silent' }),
     printQRInTerminal: false,
     browser: Browsers.macOS("Firefox"),
@@ -78,17 +78,17 @@ async function connectToWA() {
     generateHighQualityLinkPreview: true,
   });
 
-  Flex Music.ev.on('connection.update', async (update) => {
+  FlexMusic.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect } = update;
     if (connection === 'close') {
       if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
         connectToWA();
       }
     } else if (connection === 'open') {
-      console.log('✅ 𝗙𝗹𝗲𝘅 𝗠𝘂𝘀𝗶𝗰 | 🎧🌎 connected to WhatsApp');
+      console.log('✅ FlexMusic� | 🎧🌎 connected to WhatsApp');
 
-      const up = `𝗙𝗹𝗲𝘅 𝗠𝘂𝘀𝗶𝗰 | 🎧🌎 connected ✅\n\nPREFIX: ${prefix}`;
-      await Flex Music.sendMessage(ownerNumber[0] + "@s.whatsapp.net", {
+      const up = `FlexMusic� | 🎧🌎 connected ✅\n\nPREFIX: ${prefix}`;
+      await FlexMusic.sendMessage(ownerNumber[0] + "@s.whatsapp.net", {
         image: { url: `https://github.com/shangoal/-/blob/main/images/flex%20Music.jpg?raw=true` },
         caption: up
       });
@@ -101,12 +101,12 @@ async function connectToWA() {
     }
   });
 
-  Flex Music.ev.on('creds.update', saveCreds);
+  FlexMusic.ev.on('creds.update', saveCreds);
 
-  Flex Music.ev.on('messages.upsert', async ({ messages }) => {
+  FlexMusic.ev.on('messages.upsert', async ({ messages }) => {
     for (const msg of messages) {
       if (msg.messageStubType === 68) {
-        await Flex Music.sendMessageAck(msg.key);
+        await FlexMusic.sendMessageAck(msg.key);
       }
     }
 
@@ -116,7 +116,7 @@ async function connectToWA() {
     mek.message = getContentType(mek.message) === 'ephemeralMessage' ? mek.message.ephemeralMessage.message : mek.message;
     if (mek.key.remoteJid === 'status@broadcast') return;
 
-    const m = sms(Flex Music, mek);
+    const m = sms(FlexMusic, mek);
     const type = getContentType(mek.message);
     const from = mek.key.remoteJid;
     const body = type === 'conversation' ? mek.message.conversation : mek.message[type]?.text || mek.message[type]?.caption || '';
@@ -125,30 +125,30 @@ async function connectToWA() {
     const args = body.trim().split(/ +/).slice(1);
     const q = args.join(' ');
 
-    const sender = mek.key.fromMe ? Flex Music.user.id : (mek.key.participant || mek.key.remoteJid);
+    const sender = mek.key.fromMe ? FlexMusic.user.id : (mek.key.participant || mek.key.remoteJid);
     const senderNumber = sender.split('@')[0];
     const isGroup = from.endsWith('@g.us');
-    const botNumber = Flex Music.user.id.split(':')[0];
+    const botNumber = FlexMusic.user.id.split(':')[0];
     const pushname = mek.pushName || 'Sin Nombre';
     const isMe = botNumber.includes(senderNumber);
     const isOwner = ownerNumber.includes(senderNumber) || isMe;
-    const botNumber2 = await jidNormalizedUser(Flex Music.user.id);
+    const botNumber2 = await jidNormalizedUser(FlexMusic.user.id);
 
-    const groupMetadata = isGroup ? await Flex Music.groupMetadata(from).catch(() => {}) : '';
+    const groupMetadata = isGroup ? await FlexMusic.groupMetadata(from).catch(() => {}) : '';
     const groupName = isGroup ? groupMetadata.subject : '';
     const participants = isGroup ? groupMetadata.participants : '';
     const groupAdmins = isGroup ? await getGroupAdmins(participants) : '';
     const isBotAdmins = isGroup ? groupAdmins.includes(botNumber2) : false;
     const isAdmins = isGroup ? groupAdmins.includes(sender) : false;
 
-    const reply = (text) => Flex Music.sendMessage(from, { text }, { quoted: mek });
+    const reply = (text) => FlexMusic.sendMessage(from, { text }, { quoted: mek });
 
     if (isCmd) {
       const cmd = commands.find((c) => c.pattern === commandName || (c.alias && c.alias.includes(commandName)));
       if (cmd) {
-        if (cmd.react) Flex Music.sendMessage(from, { react: { text: cmd.react, key: mek.key } });
+        if (cmd.react) FlexMusic.sendMessage(from, { react: { text: cmd.react, key: mek.key } });
         try {
-          cmd.function(Flex Music, mek, m, {
+          cmd.function(FlexMusic, mek, m, {
             from, quoted: mek, body, isCmd, command: commandName, args, q,
             isGroup, sender, senderNumber, botNumber2, botNumber, pushname,
             isMe, isOwner, groupMetadata, groupName, participants, groupAdmins,
@@ -164,7 +164,7 @@ async function connectToWA() {
     for (const handler of replyHandlers) {
       if (handler.filter(replyText, { sender, message: mek })) {
         try {
-          await handler.function(Flex Music, mek, m, {
+          await handler.function(FlexMusic, mek, m, {
             from, quoted: mek, body: replyText, sender, reply,
           });
           break;
@@ -179,7 +179,7 @@ async function connectToWA() {
 ensureSessionFile();
 
 app.get("/", (req, res) => {
-  res.send("Hey, 𝗙𝗹𝗲𝘅 𝗠𝘂𝘀𝗶𝗰 | 🎧🌎✅");
+  res.send("Hey, FlexMusic� | 🎧🌎✅");
 });
 
 app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));
