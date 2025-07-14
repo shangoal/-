@@ -11,7 +11,6 @@ const {
 const fs = require('fs');
 const P = require('pino');
 const express = require('express');
-const axios = require('axios');
 const path = require('path');
 const qrcode = require('qrcode-terminal');
 
@@ -37,24 +36,29 @@ async function ensureSessionFile() {
       process.exit(1);
     }
 
-    console.log("🔄FlexMusic� | 🎧🌎 creds.json not found. Downloading session from MEGA...");
+    console.log("🔄 FlexMusic | 🎧🌎 creds.json not found. Downloading session from MEGA...");
 
-    const sessdata = config.SESSION_ID;
-    const filer = File.fromURL(`https://mega.nz/file/${sessdata}`);
-
-    filer.download((err, data) => {
-      if (err) {
-        console.error("❌FlexMusic� | 🎧🌎 Failed to download session file from MEGA:", err);
-        process.exit(1);
-      }
+    try {
+      const sessdata = config.SESSION_ID;
+      const filer = File.fromURL(`https://mega.nz/file/${sessdata}`);
+      // Convert callback to promise for better flow
+      const data = await new Promise((resolve, reject) => {
+        filer.download((err, data) => {
+          if (err) reject(err);
+          else resolve(data);
+        });
+      });
 
       fs.mkdirSync(path.join(__dirname, '/auth_info_baileys/'), { recursive: true });
       fs.writeFileSync(credsPath, data);
-      console.log("✅FlexMusic� | 🎧🌎 Session downloaded and saved. Restarting bot...");
+      console.log("✅ FlexMusic | 🎧🌎 Session downloaded and saved. Restarting bot...");
       setTimeout(() => {
         connectToWA();
       }, 2000);
-    });
+    } catch (err) {
+      console.error("❌ FlexMusic | 🎧🌎 Failed to download session file from MEGA:", err);
+      process.exit(1);
+    }
   } else {
     setTimeout(() => {
       connectToWA();
@@ -63,7 +67,7 @@ async function ensureSessionFile() {
 }
 
 async function connectToWA() {
-  console.log("Connecting FlexMusic� | 🎧🌎 🧬...");
+  console.log("Connecting FlexMusic | 🎧🌎 🧬...");
   const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, '/auth_info_baileys/'));
   const { version } = await fetchLatestBaileysVersion();
 
@@ -85,14 +89,15 @@ async function connectToWA() {
         connectToWA();
       }
     } else if (connection === 'open') {
-      console.log('✅ FlexMusic� | 🎧🌎 connected to WhatsApp');
+      console.log('✅ FlexMusic | 🎧🌎 connected to WhatsApp');
 
-      const up = `FlexMusic� | 🎧🌎 connected ✅\n\nPREFIX: ${prefix}`;
+      const up = `FlexMusic | 🎧🌎 connected ✅\n\nPREFIX: ${prefix}`;
       await FlexMusic.sendMessage(ownerNumber[0] + "@s.whatsapp.net", {
         image: { url: `https://github.com/shangoal/-/blob/main/images/flex%20Music.jpg?raw=true` },
         caption: up
       });
 
+      // Optionally, pass FlexMusic to plugins if needed
       fs.readdirSync("./plugins/").forEach((plugin) => {
         if (path.extname(plugin).toLowerCase() === ".js") {
           require(`./plugins/${plugin}`);
@@ -179,7 +184,7 @@ async function connectToWA() {
 ensureSessionFile();
 
 app.get("/", (req, res) => {
-  res.send("Hey, FlexMusic� | 🎧🌎✅");
+  res.send("Hey, FlexMusic | 🎧🌎✅");
 });
 
 app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));
